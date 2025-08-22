@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CyberGuard: Jogo de Cyber Segurança</title>
+  <meta name="description" content="Jogo educativo de navegador sobre boas práticas de cyber segurança: quiz, laboratório de senhas e detector de phishing."/>
+  <style>
+    :root{
+      --bg:#0b1220;        /* fundo escuro */
+      --panel:#101a30;     /* cartões */
+      --muted:#96a3c0;     /* texto secundário */
+      --text:#e6ecff;      /* texto principal */
+      --primary:#60a5fa;   /* azul */
+      --success:#34d399;   /* verde */
+      --danger:#f87171;    /* vermelho */
+      --warning:#fbbf24;   /* amarelo */
+      --accent:#a78bfa;    /* roxo */
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Inter,Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 10% 0%, #0d1730 30%, #0b1220 70%) no-repeat fixed;
+      color:var(--text);
+    }
+    .container{max-width:1100px;margin:32px auto;padding:0 16px}
+    header{
+      display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:20px
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:44px;height:44px;border-radius:12px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display:grid;place-items:center;box-shadow:var(--shadow)
+    }
+    .logo span{font-weight:900;color:#0b1220}
+    h1{font-size:clamp(22px,3.5vw,32px);margin:0}
+    .pill{
+      border:1px solid #1f2a46;border-radius:999px;padding:8px 14px;color:var(--muted);
+      background:#0e1932aa;backdrop-filter: blur(8px);
+    }
+    .grid{
+      display:grid;gap:16px;
+      grid-template-columns: 1.2fr .8fr;
+    }
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{
+      background:linear-gradient(180deg,#0f1a33, #0e1830);
+      border:1px solid #1f2a46;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)
+    }
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab-btn{
+      appearance:none;border:none;cursor:pointer;padding:10px 14px;border-radius:12px;font-weight:600;
+      color:var(--text);background:#0c1630;border:1px solid #1f2a46;transition:.2s transform;
+    }
+    .tab-btn[aria-selected="true"]{background:linear-gradient(135deg, #20345f, #1a2a50); border-color:#294077}
+    .tab-btn:active{transform:translateY(1px)}
+
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .muted{color:var(--muted)}
+    .badge{padding:6px 10px;border-radius:10px;background:#0f214a;border:1px solid #273a6a;color:#cfe0ff;font-size:12px}
+    .score{font-weight:800;color:var(--success)}
+
+    .btn{
+      appearance:none;border:none;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;
+      background:linear-gradient(135deg,var(--primary),#4f46e5);color:#091228;box-shadow:var(--shadow);
+    }
+    .btn.secondary{background:#0c1630;color:var(--text);border:1px solid #1f2a46}
+    .btn.ghost{background:transparent;border:1px dashed #294077;color:#bcd1ff}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+
+    /* Quiz */
+    .question{font-size:18px;margin:6px 0 12px}
+    .answers{display:grid;gap:10px}
+    .answers button{justify-content:flex-start}
+    .answers .correct{outline:2px solid var(--success)}
+    .answers .wrong{outline:2px solid var(--danger)}
+
+    /* Password Lab */
+    .lab{display:grid;gap:12px}
+    .progress{height:12px;border-radius:999px;background:#0b1430;border:1px solid #1f2a46;overflow:hidden}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#ef4444,#f59e0b,#10b981);transition:width .25s}
+    .rule{display:flex;align-items:center;gap:8px;color:#cdd9f7}
+    .rule.pass{color:var(--success)}
+
+    /* Phishing */
+    .mail{
+      background:#0d1429;border:1px solid #233258;border-radius:14px;padding:0;overflow:hidden
+    }
+    .mail .head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #233258;background:#0f1a33;padding:10px 14px}
+    .mail .body{padding:16px;line-height:1.6}
+    .flag{cursor:pointer;border-radius:6px;padding:2px 4px}
+    .flag[data-found="true"]{background:rgba(248,113,113,.15);outline:1px dashed var(--danger)}
+    .hint{font-size:13px;color:#b8c4e6}
+
+    footer{margin-top:24px;color:#9db1e6;font-size:13px}
+    code.kbd{font-size:12px;padding:2px 6px;border-radius:6px;background:#0e1831;border:1px solid #22345d}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><span>🛡️</span></div>
+        <div>
+          <h1>CyberGuard — Jogo de Cyber Segurança</h1>
+          <div class="muted">Aprenda boas práticas protegendo seus dados em três modos: <strong>Quiz</strong>, <strong>Laboratório de Senhas</strong> e <strong>Detector de Phishing</strong>.</div>
+        </div>
+      </div>
+      <div class="pill" id="bestScorePill" title="Maior pontuação desta máquina">🏆 Recorde: <span id="bestScore">0</span></div>
+    </header>
+
+    <div class="grid">
+      <main class="card">
+        <nav class="tabs" role="tablist" aria-label="Modos do jogo">
+          <button class="tab-btn" role="tab" aria-selected="true" aria-controls="quiz" id="tab-quiz">Quiz</button>
+          <button class="tab-btn" role="tab" aria-selected="false" aria-controls="lab" id="tab-lab">Laboratório de Senhas</button>
+          <button class="tab-btn" role="tab" aria-selected="false" aria-controls="phish" id="tab-phish">Detector de Phishing</button>
+        </nav>
+
+        <!-- QUIZ -->
+        <section id="quiz" role="tabpanel" aria-labelledby="tab-quiz" style="margin-top:14px">
+          <div class="row" style="justify-content:space-between">
+            <div class="badge">Pergunta <span id="qIndex">1</span>/<span id="qTotal">10</span></div>
+            <div class="row">
+              <div class="badge">⭐ Pontos: <span id="score">0</span></div>
+              <div class="badge">⏱️ Tempo: <span id="time">00:00</span></div>
+              <div class="badge">❤️ Vidas: <span id="lives">3</span></div>
+            </div>
+          </div>
+          <h2 class="question" id="question">Carregando...</h2>
+          <div class="answers" id="answers"></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" id="next" disabled>Próxima</button>
+            <button class="btn secondary" id="restart">Reiniciar</button>
+            <button class="btn ghost" id="toggleTips">Mostrar dicas</button>
+          </div>
+          <p class="hint" id="tip" hidden></p>
+        </section>
+
+        <!-- PASSWORD LAB -->
+        <section id="lab" role="tabpanel" aria-labelledby="tab-lab" hidden style="margin-top:14px">
+          <h2>Laboratório de Senhas</h2>
+          <div class="lab">
+            <label for="pwd">Digite uma senha de teste (tudo local no seu navegador):</label>
+            <input id="pwd" type="password" placeholder="Ex.: R0bo!2025_super" style="width:100%;padding:12px;border-radius:12px;border:1px solid #1f2a46;background:#0b1430;color:var(--text)"/>
+            <div class="row">
+              <label><input type="checkbox" id="showPwd"> Mostrar</label>
+              <button class="btn secondary" id="genPwd">Gerar senha forte</button>
+              <button class="btn ghost" id="copyPwd">Copiar</button>
+            </div>
+            <div class="progress" aria-label="Força da senha"><div class="bar" id="bar"></div></div>
+            <div class="row" id="scorePwd" style="gap:16px"><span class="badge">Força: <strong id="strength">0/100</strong></span><span class="badge">Entropia: <strong id="entropy">0</strong> bits (aprox.)</span></div>
+            <div id="rules"></div>
+            <details>
+              <summary class="muted">Boas práticas</summary>
+              <ul>
+                <li>Use frases longas com aleatoriedade (ex.: <em>Tigre3!Palhaço_Orvalho</em>).</li>
+                <li>Evite palavras do dicionário e dados pessoais (nome, data, time).</li>
+                <li>Ative 2FA nos serviços importantes.</li>
+                <li>Não reutilize senhas; use um gerenciador.</li>
+              </ul>
+            </details>
+          </div>
+        </section>
+
+        <!-- PHISHING -->
+        <section id="phish" role="tabpanel" aria-labelledby="tab-phish" hidden style="margin-top:14px">
+          <h2>Detector de Phishing</h2>
+          <p class="muted">Clique nos <strong>sinais suspeitos</strong> dentro do e‑mail. Encontre todos para vencer a rodada!</p>
+          <div class="row" style="justify-content:space-between;margin-bottom:8px">
+            <div class="badge">Rodada: <span id="phRound">1</span>/5</div>
+            <div class="badge">Acertos: <span id="phFound">0</span>/<span id="phTotal">0</span></div>
+          </div>
+          <article class="mail" aria-live="polite">
+            <div class="head"><div><strong id="mFrom">suporte@micr0soft.com</strong> — <span class="muted">Assunto: Sua conta será bloqueada!</span></div>
+              <button class="btn secondary" id="newMail">Nova mensagem</button></div>
+            <div class="body" id="mBody">
+              <p>Olá usuário,</p>
+              <p>Detectamos <span class="flag" data-flag>atividade irregular</span> na sua conta. Para evitar o bloqueio imediato, <span class="flag" data-flag>pague uma taxa urgente</span> clicando <a href="#" class="flag" data-flag>aqui</a>.</p>
+              <p>Seu ID: <span class="flag" data-flag>123456</span>. Prazo: <span class="flag" data-flag>30 minutos</span>.</p>
+              <p>Atenciosamente,<br><span class="flag" data-flag>Equipe Suporte Micro-soft</span></p>
+            </div>
+          </article>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" id="phNext">Próxima rodada</button>
+            <button class="btn secondary" id="phRestart">Reiniciar</button>
+            <button class="btn ghost" id="phTips">Dica</button>
+          </div>
+          <p class="hint" id="phHint" hidden>Desconfie de <em>urgência</em>, <em>erros de ortografia</em>, <em>links encurtados</em> e <em>remetente estranho</em>.</p>
+        </section>
+      </main>
+
+      <aside class="card">
+        <h3>Objetivo</h3>
+        <p>Ganhe pontos ao acertar perguntas, criar senhas fortes e detectar golpes. Seu <strong>recorde</strong> fica salvo no navegador.</p>
+        <h3>Conquistas</h3>
+        <ul id="achievements" class="muted" style="padding-left:18px">
+          <li>—</li>
+        </ul>
+        <h3 style="margin-top:16px">Atalhos</h3>
+        <p><code class="kbd">Q</code> Quiz • <code class="kbd">L</code> Senhas • <code class="kbd">P</code> Phishing</p>
+        <h3 style="margin-top:16px">Créditos</h3>
+        <p class="muted">Feito para trabalho escolar. Código 100% local, sem enviar dados.</p>
+      </aside>
+    </div>
+
+    <footer class="container" style="padding:0">
+      <p>💡 Dica rápida: mantenha seus dispositivos atualizados, desconfie de anexos inesperados e ative a <strong>verificação em duas etapas</strong>.</p>
+    </footer>
+  </div>
+
+<script>
+// ========================= UTIL =========================
+const $ = (q,root=document)=>root.querySelector(q);
+const $$ = (q,root=document)=>Array.from(root.querySelectorAll(q));
+const formatTime = (s)=>{
+  const m = Math.floor(s/60).toString().padStart(2,'0');
+  const r = Math.floor(s%60).toString().padStart(2,'0');
+  return `${m}:${r}`;
+}
+
+// ========================= ESTADO GLOBAL =========================
+const state = {
+  score: 0,
+  best: +(localStorage.getItem('cg_best')||0),
+  lives: 3,
+  timeStart: Date.now(),
+  achievements: new Set(JSON.parse(localStorage.getItem('cg_ach')||'[]')),
+};
+
+function updateBest(){
+  if(state.score>state.best){
+    state.best = state.score; localStorage.setItem('cg_best', state.best);
+    toast('🏆 Novo Recorde!');
+  }
+  $('#bestScore').textContent = state.best;
+}
+
+function addScore(v){
+  state.score += v; $('#score').textContent = state.score; updateBest();
+}
+
+function loseLife(){
+  state.lives = Math.max(0, state.lives-1); $('#lives').textContent = state.lives;
+  if(state.lives===0){
+    toast('💥 Fim de jogo no Quiz! Clique em Reiniciar.');
+    disableAnswers();
+  }
+}
+
+function tick(){
+  const secs = (Date.now()-state.timeStart)/1000; $('#time').textContent = formatTime(secs);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+function toast(msg){
+  const t = document.createElement('div');
+  t.textContent = msg; t.style.position='fixed'; t.style.zIndex='9999';
+  t.style.bottom='20px'; t.style.left='50%'; t.style.transform='translateX(-50%)';
+  t.style.background='rgba(15,27,57,.95)'; t.style.border='1px solid #2a3d71';
+  t.style.padding='10px 14px'; t.style.borderRadius='12px'; t.style.boxShadow='var(--shadow)';
+  document.body.appendChild(t); setTimeout(()=>t.remove(), 2200);
+}
+
+function unlock(id,label){
+  if(!state.achievements.has(id)){
+    state.achievements.add(id);
+    localStorage.setItem('cg_ach', JSON.stringify([...state.achievements]));
+    const li = document.createElement('li'); li.textContent = '🏅 '+label; $('#achievements').appendChild(li);
+    toast('Conquista desbloqueada: '+label);
+  }
+}
+
+function renderAchievements(){
+  const list = $('#achievements'); list.innerHTML='';
+  if(state.achievements.size===0){ list.innerHTML='<li>—</li>'; return; }
+  [...state.achievements].forEach(id=>{
+    const map = { 
+      'quiz10':'Acertei 10 no Quiz',
+      'pwd80':'Senha 80+ pontos',
+      'phish5':'5 e-mails limpos',
+      'noTips':'Sem usar dicas',
+    };
+    const li = document.createElement('li'); li.textContent = '🏅 '+(map[id]||id); list.appendChild(li);
+  });
+}
+
+// ========================= TABS =========================
+const tabs = $$('.tab-btn');
+const panels = ['quiz','lab','phish'].map(id=>$('#'+id));
+
+tabs.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    tabs.forEach(b=>b.setAttribute('aria-selected','false'));
+    btn.setAttribute('aria-selected','true');
+    panels.forEach(p=>p.hidden = (p.id!==btn.getAttribute('aria-controls')));
+  });
+});
+
+// Atalhos teclado
+window.addEventListener('keydown',(e)=>{
+  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if(e.key.toLowerCase()==='q') $('#tab-quiz').click();
+  if(e.key.toLowerCase()==='l') $('#tab-lab').click();
+  if(e.key.toLowerCase()==='p') $('#tab-phish').click();
+});
+
+// ========================= QUIZ =========================
+const QUESTIONS = [
+  {
+    q:'Qual é a atitude mais segura ao receber um anexo inesperado?',
+    a:['Abrir para ver o conteúdo','Salvar e abrir depois','Confirmar com o remetente por outro canal','Encaminhar para amigos'],
+    c:2, tip:'Confirme por outro canal (telefone/app) para validar se o envio foi intencional.'
+  },
+  {
+    q:'O que é 2FA (autenticação de dois fatores)?',
+    a:['Login com duas contas','Senha + confirmação extra (ex.: app, token, SMS)','Login em dois dispositivos','Senha com 2 símbolos'],
+    c:1, tip:'2FA adiciona uma segunda prova de identidade além da senha.'
+  },
+  {
+    q:'Qual senha é mais forte?',
+    a:['Kaique123','Brasil2024','R0sa!Pipa_Lua 44','maria0707'],
+    c:2, tip:'Comprimento + variedade + imprevisibilidade = mais forte.'
+  },
+  {
+    q:'Ao usar Wi‑Fi público, é mais seguro…',
+    a:['Acessar banco sem problemas','Usar VPN e evitar dados sensíveis','Desativar o antivírus','Compartilhar arquivos na rede'],
+    c:1, tip:'VPN + evitar logins sensíveis em redes públicas reduz riscos.'
+  },
+  {
+    q:'“Phishing” é…',
+    a:['Vírus que apaga arquivos','Golpe para roubar dados fingindo ser confiável','Aplicativo de backup','Tecnologia de criptografia'],
+    c:1, tip:'Phishing finge ser legítimo para capturar credenciais/dados.'
+  },
+  {
+    q:'Qual é a melhor prática para atualizações?',
+    a:['Adiar sempre','Atualizar assim que possível','Desinstalar updates','Atualizar só o navegador'],
+    c:1, tip:'Patches corrigem falhas exploráveis por atacantes.'
+  },
+  {
+    q:'Em redes sociais, para proteger sua privacidade:',
+    a:['Perfil totalmente público','Aceitar todos pedidos','Revisar permissões e público das postagens','Postar documentos pessoais'],
+    c:2, tip:'Controle quem vê seu conteúdo e o que os apps podem acessar.'
+  },
+  {
+    q:'Você recebe um e‑mail “ganhe prêmio”. O que fazer?',
+    a:['Clicar no link','Responder com dados','Excluir/denunciar','Baixar o anexo'],
+    c:2, tip:'Se parece bom demais, provavelmente é golpe. Denuncie.'
+  },
+  {
+    q:'Backups são importantes porque…',
+    a:['Deixam o PC mais rápido','Permitem recuperar dados após ataques (ex.: ransomware)','Economizam internet','Impedem todos vírus'],
+    c:1, tip:'Backup 3‑2‑1: 3 cópias, 2 mídias, 1 fora do local.'
+  },
+  {
+    q:'O que é “engenharia social”?',
+    a:['Atualização do Windows','Técnicas psicológicas para manipular pessoas','VPN corporativa','Firewall físico'],
+    c:1, tip:'Golpistas exploram confiança, pressa e autoridade aparente.'
+  },
+  {
+    q:'Ao criar senhas para vários sites, o ideal é…',
+    a:['Reutilizar a mesma senha','Anotar num post‑it no monitor','Usar gerenciador de senhas','Pedir ao amigo guardar'],
+    c:2, tip:'Gerenciadores criam e armazenam senhas únicas com segurança.'
+  },
+  {
+    q:'Links encurtados (ex.: bit.ly) exigem…',
+    a:['Nada especial','Cuidado extra: podem esconder o destino','Instalar app','Sempre confiar'],
+    c:1, tip:'Passe o mouse ou use expansores para ver o destino antes de clicar.'
+  },
+];
+
+let qIndex=0; let used=false; let noTipsUsed=true;
+$('#qTotal').textContent = QUESTIONS.length;
+
+function renderQuestion(){
+  $('#qIndex').textContent = qIndex+1; $('#tip').hidden=true; $('#next').disabled=true; used=false;
+  const q = QUESTIONS[qIndex]; $('#question').textContent = q.q; const box = $('#answers'); box.innerHTML='';
+  q.a.forEach((txt,i)=>{
+    const b = document.createElement('button'); b.className='btn secondary'; b.textContent = txt; b.style.width='100%';
+    b.addEventListener('click',()=>selectAnswer(i,b)); box.appendChild(b);
+  });
+}
+
+function selectAnswer(i, btn){ if(used) return; used=true; const q=QUESTIONS[qIndex];
+  $$('#answers button').forEach(b=>b.disabled=true);
+  if(i===q.c){ btn.classList.add('correct'); addScore(100); if(qIndex===9) unlock('quiz10','Acertei 10 no Quiz'); }
+  else { btn.classList.add('wrong'); loseLife(); }
+  $('#next').disabled=false;
+}
+
+function disableAnswers(){ $$('#answers button').forEach(b=>b.disabled=true); }
+
+$('#next').addEventListener('click',()=>{
+  if(qIndex<QUESTIONS.length-1){ qIndex++; renderQuestion(); }
+  else { toast('🏁 Quiz concluído!'); unlock('noTips', noTipsUsed? 'Sem usar dicas':'Dicas usadas'); qIndex=0; renderQuestion(); }
+});
+
+$('#restart').addEventListener('click',()=>{
+  state.score=0; $('#score').textContent=0; state.lives=3; $('#lives').textContent=3; state.timeStart=Date.now(); qIndex=0; renderQuestion();
+});
+
+$('#toggleTips').addEventListener('click',()=>{
+  const el=$('#tip'); el.hidden=!el.hidden; noTipsUsed = noTipsUsed && !el.hidden ? false : noTipsUsed; if(!el.hidden){ $('#tip').textContent = QUESTIONS[qIndex].tip; }
+});
+
+renderQuestion(); updateBest(); renderAchievements();
+
+// ========================= PASSWORD LAB =========================
+const pwd = $('#pwd'); const bar=$('#bar'); const strength=$('#strength'); const entropyEl=$('#entropy');
+const rulesEl = $('#rules');
+
+const RULES = [
+  { id:'len12', label:'Pelo menos 12 caracteres', pass:false },
+  { id:'mix', label:'Mistura de maiúsculas, minúsculas, números e símbolos', pass:false },
+  { id:'noDict', label:'Evita palavras comuns (dicionário) e padrões óbvios', pass:false },
+  { id:'noPersonal', label:'Não contém dados pessoais (nome, data, time, etc.)', pass:false },
+];
+
+function renderRules(){
+  rulesEl.innerHTML='';
+  RULES.forEach(r=>{
+    const div=document.createElement('div'); div.className='rule'+(r.pass?' pass':''); div.id='rule-'+r.id;
+    div.innerHTML = (r.pass?'✅ ':'⬜ ') + r.label; rulesEl.appendChild(div);
+  });
+}
+renderRules();
+
+function scorePassword(s){
+  // análise simples de entropia aproximada
+  let pool=0; if(/[a-z]/.test(s)) pool+=26; if(/[A-Z]/.test(s)) pool+=26; if(/[0-9]/.test(s)) pool+=10; if(/[^\w]/.test(s)) pool+=33;
+  let entropy = s.length>0 ? Math.log2(Math.max(pool,1)) * s.length : 0; // bits aproximados
+  // penalidades
+  const dict = /(senha|password|qwerty|12345|abc|brasil|admin|god|love|soccer|football|dragon|letmein)/i;
+  const patterns = /(\d{4,}|([A-Za-z])\2\2|([A-Za-z]{3,})\1)/;
+  let score = Math.min(100, Math.round(entropy));
+  if(dict.test(s)) score -= 25; if(patterns.test(s)) score -= 10; if(/\b(202[0-9]|19\d\d)\b/.test(s)) score -= 5;
+  score = Math.max(0, score);
+
+  // regras
+  RULES.find(r=>r.id==='len12').pass = s.length>=12;
+  RULES.find(r=>r.id==='mix').pass = /[a-z]/.test(s)&&/[A-Z]/.test(s)&&/[0-9]/.test(s)&&/[^\w]/.test(s);
+  RULES.find(r=>r.id==='noDict').pass = !dict.test(s);
+  RULES.find(r=>r.id==='noPersonal').pass = !/(kaique|maria|joao|silva|rigo|200[0-9]|201[0-9]|202[0-9]|\b\d{2}\/\d{2}\/\d{2,4}\b)/i.test(s);
+
+  return {score, entropy: Math.round(entropy)};
+}
+
+function updatePwd(){
+  const v = pwd.value; const {score, entropy} = scorePassword(v); bar.style.width = Math.min(100,score)+'%'; strength.textContent=score+'/100'; entropyEl.textContent=entropy;
+  RULES.forEach(r=>$('#rule-'+r.id).classList.toggle('pass', r.pass));
+  if(score>=80) unlock('pwd80','Senha 80+ pontos');
+}
+
+pwd.addEventListener('input', updatePwd);
+$('#showPwd').addEventListener('change', e=>{ pwd.type = e.target.checked?'text':'password'; });
+
+$('#genPwd').addEventListener('click',()=>{
+  const words = ['Névoa','Trilha','Cometa','Caju','Orvalho','Quati','Vórtice','Ninfa','Riacho','Pipas','Bambu','Siri'];
+  function rand(a){return a[Math.floor(Math.random()*a.length)]}
+  const s = `${rand(words)}${Math.floor(Math.random()*100)}!${rand(words)}_${rand(words)}${Math.floor(Math.random()*90+10)}`;
+  pwd.value = s; updatePwd(); toast('Gerada uma senha forte de exemplo.');
+});
+
+$('#copyPwd').addEventListener('click',async()=>{
+  try{ await navigator.clipboard.writeText(pwd.value); toast('Copiada para a área de transferência'); }catch{ toast('Falha ao copiar'); }
+});
+
+// ========================= PHISHING =========================
+const TEMPLATES = [
+  {
+    from:'suporte@micr0soft.com',
+    subject:'Sua conta será bloqueada!',
+    body:`<p>Olá usuário,</p>
+      <p>Detectamos <span class="flag" data-flag>atividade irregular</span> na sua conta. Para evitar o bloqueio <span class="flag" data-flag>imediato</span>, <span class="flag" data-flag>pague uma taxa</span> clicando <a href="#" class="flag" data-flag>aqui</a>.</p>
+      <p>Prazo: <span class="flag" data-flag>30 minutos</span>. Não responda este e‑mail.</p>
+      <p>Atenciosamente,<br><span class="flag" data-flag>Equipe Micro-soft</span></p>`
+  },
+  {
+    from:'rh@empresax.co',
+    subject:'Atualize seu holerite',
+    body:`<p>Prezado(a),</p>
+      <p>Seu <span class="flag" data-flag>holerite</span> não pôde ser processado. Baixe o <a href="#" class="flag" data-flag>anexo .zip</a> e preencha seus <span class="flag" data-flag>dados bancários</span>.</p>
+      <p><span class="flag" data-flag>Confidencial — não compartilhe</span></p>`
+  },
+  {
+    from:'promo@streamflix.support',
+    subject:'🎁 1 mês grátis – ação limitada',
+    body:`<p>Parabéns!</p>
+      <p>Você foi <span class="flag" data-flag>selecionado aleatoriamente</span>. Para ativar, faça login <a href="#" class="flag" data-flag>neste link</a> e <span class="flag" data-flag>confirme seu cartão</span>.</p>
+      <p><span class="flag" data-flag>Não perca! Expira hoje</span></p>`
+  },
+  {
+    from:'ti@escola.gov.br.security',
+    subject:'URGENTE: redefina sua senha escolar',
+    body:`<p>Servidor detectou <span class="flag" data-flag>vírus crítico</span>. <span class="flag" data-flag>Redefina agora</span> para evitar <span class="flag" data-flag>perda de notas</span>. Acesse <a href="#" class="flag" data-flag>http://escola.gov.br-security/reset</a></p>`
+  }
+];
+
+let phRound=1, phFound=0, phTotal=0;
+
+function renderMail(){
+  const tpl = TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
+  $('#mFrom').textContent = tpl.from + ' — '; $('.head .muted').textContent = 'Assunto: '+tpl.subject;
+  $('#mBody').innerHTML = tpl.body;
+  // preparar flags
+  $$('.flag', $('#mBody')).forEach(node=>{
+    node.setAttribute('data-found','false');
+    node.addEventListener('click',()=>{
+      if(node.getAttribute('data-found')==='true') return;
+      node.setAttribute('data-found','true'); phFound++; $('#phFound').textContent=phFound;
+      addScore(30);
+      if(phFound===phTotal){ toast('✅ Todos sinais encontrados!'); if(phRound===5) unlock('phish5','5 e-mails limpos'); }
+    });
+  });
+  phFound=0; phTotal = $$('.flag', $('#mBody')).length; $('#phFound').textContent=0; $('#phTotal').textContent=phTotal;
+}
+
+$('#newMail').addEventListener('click',()=>{ renderMail(); });
+$('#phNext').addEventListener('click',()=>{ if(phRound<5){ phRound++; $('#phRound').textContent=phRound; renderMail(); } else { toast('🏁 Fim das rodadas!'); phRound=1; $('#phRound').textContent=1; renderMail(); } });
+$('#phRestart').addEventListener('click',()=>{ phRound=1; $('#phRound').textContent=1; renderMail(); });
+$('#phTips').addEventListener('click',()=>{ $('#phHint').hidden = !$('#phHint').hidden; });
+
+renderMail();
+
+// ========================= INIT =========================
+updateBest(); renderAchievements();
+</script>
+</body>
+</html>
