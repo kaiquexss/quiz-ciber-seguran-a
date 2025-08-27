@@ -59,7 +59,7 @@
     }
     .tab-btn[aria-selected="true"]{background:linear-gradient(135deg, #20345f, #1a2a50); border-color:#294077}
     .tab-btn:active{transform:translateY(1px)}
-
+<script>
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .muted{color:var(--muted)}
     .badge{padding:6px 10px;border-radius:10px;background:#0f214a;border:1px solid #273a6a;color:#cfe0ff;font-size:12px}
@@ -325,7 +325,7 @@ const QUESTIONS = [
   },
   {
     q:'Qual senha é mais forte?',
-    a:['Kaique123','Brasil2024','R0sa!Pipa_Lua 44','maria0707'],
+    a:['Kaiquelindo123','Brasil2025','R0sa!Pipa_Lua 44','maria0707'],
     c:2, tip:'Comprimento + variedade + imprevisibilidade = mais forte.'
   },
   {
